@@ -1,0 +1,27 @@
+o<tool_drop> sub
+    #<pocket_number> = #1    
+    o<tool_pocket_get_coordinates> call [#<pocket_number>]
+    o100 if [#<_value> LE 0]
+        (MSG, Invalid pocket configuration for tool)
+    o100    return [-1] ; signal error to post processing
+    o100 endif
+
+    o200 if [#<_rack_pocket_type> EQ 0]
+        o<rack_drop_simple> call [#<_rack_pocket_x>] [#<_rack_pocket_y>] [#<_rack_pocket_z>]
+        #<result> = [#<_value>]
+    o200 elseif [#<_rack_pocket_type> EQ 1 OR #<_rack_pocket_type> EQ 17]
+        o<rack_drop_handtool> call [#<_rack_pocket_x>] [#<_rack_pocket_y>] [#<_rack_pocket_z>]
+        #<result> = [#<_value>]
+    o200 else
+        (MSG, Unsupported pocket TYPE)
+    o200    return [-1]; signal error to post processing
+    o200 endif    
+
+    o210 if [#<result> LE 0]
+        (MSG, Error during tool drop)
+    o210    return [-1] ;
+    o210 endif
+
+
+o<tool_drop> endsub [1]
+M2

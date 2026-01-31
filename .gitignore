@@ -1,0 +1,15 @@
+# LinuxCNC Runtime files
+*.var
+*.log
+*.bak
+*.xml
+*.txt
+auth_token.txt
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+#*#

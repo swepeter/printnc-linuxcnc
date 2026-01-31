@@ -1,0 +1,13 @@
+o<spindle_tool_drop> sub 
+    #<z_pre_drop> = #1
+    #<z_post_drop> = #2
+    g53 g1 Z #<z_pre_drop> F600
+    ;G4 P0.1
+    M64 P #<_ini[pins]spindle_release>
+    M64 P #<_ini[pins]spindle_clean> 
+    g53 g0 Z #<z_post_drop>
+    G4 P0.5
+    M65 P #<_ini[pins]spindle_release>
+    M65 P #<_ini[pins]spindle_clean> 
+o<spindle_tool_drop> endsub 
+M2

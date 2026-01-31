@@ -1,0 +1,20 @@
+o<rack_drop_handtool> sub
+    ;(debug, Hand Tool Drop)
+    #<post_x> = #1
+    #<post_y> = #2
+    #<post_z> = #3
+
+    
+    ;(debug, z_pre_pickup: #<z_pre_pickup>)
+    g53 g0 Z #<_ini[rack_tc]z_safe>
+    
+    g53 g0 Y #<post_y>
+    g53 g0 X #<post_x> 
+    g53 g0 Z #<post_z> 
+
+    ; Drop
+    G4 P2
+    o<spindle_tool_drop> call [#<post_z>] [#<_ini[rack_tc]z_safe>]
+
+o<rack_drop_handtool> endsub [1]
+M2

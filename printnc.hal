@@ -1,0 +1,244 @@
+loadrt [KINS]KINEMATICS
+loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS num_dio=8
+loadrt hostmot2
+loadrt hm2_eth board_ip="10.10.10.10" config="num_encoders=1 num_pwmgens=1 num_stepgens=5 sserial_port_0=00xxxx" 
+loadrt or2 count=2
+loadrt and2 count=4 
+loadrt pid names=pid.s 
+loadrt abs names=abs.spindle,abs.laser 
+setp   hm2_7i96.0.watchdog.timeout_ns 5000000
+
+addf hm2_7i96.0.read          servo-thread
+addf motion-command-handler   servo-thread
+addf motion-controller        servo-thread
+addf hm2_7i96.0.write         servo-thread
+addf or2.0                    servo-thread
+addf or2.1                    servo-thread
+addf and2.0                   servo-thread
+addf and2.1                   servo-thread
+addf and2.2                   servo-thread
+addf and2.3                   servo-thread
+addf pid.s.do-pid-calcs       servo-thread
+addf abs.spindle              servo-thread
+addf abs.laser                servo-thread
+
+# StepGen Timing (5000ns = 5us)
+# Per-Stepgen settings for Mesa 7i96
+setp hm2_7i96.0.stepgen.00.steplen 5000
+setp hm2_7i96.0.stepgen.00.stepspace 5000
+setp hm2_7i96.0.stepgen.00.dirsetup 5000
+setp hm2_7i96.0.stepgen.00.dirhold 5000
+
+setp hm2_7i96.0.stepgen.01.steplen 5000
+setp hm2_7i96.0.stepgen.01.stepspace 5000
+setp hm2_7i96.0.stepgen.01.dirsetup 5000
+setp hm2_7i96.0.stepgen.01.dirhold 5000
+
+setp hm2_7i96.0.stepgen.02.steplen 5000
+setp hm2_7i96.0.stepgen.02.stepspace 5000
+setp hm2_7i96.0.stepgen.02.dirsetup 5000
+setp hm2_7i96.0.stepgen.02.dirhold 5000
+
+setp hm2_7i96.0.stepgen.03.steplen 5000
+setp hm2_7i96.0.stepgen.03.stepspace 5000
+setp hm2_7i96.0.stepgen.03.dirsetup 5000
+setp hm2_7i96.0.stepgen.03.dirhold 5000
+
+setp hm2_7i96.0.stepgen.04.steplen 5000
+setp hm2_7i96.0.stepgen.04.stepspace 5000
+setp hm2_7i96.0.stepgen.04.dirsetup 5000
+setp hm2_7i96.0.stepgen.04.dirhold 5000
+
+# --- JOINT 0 (X) ---
+setp hm2_7i96.0.stepgen.00.direction.invert_output TRUE
+setp hm2_7i96.0.stepgen.00.maxaccel [JOINT_0]STEPGEN_MAXACCEL
+setp hm2_7i96.0.stepgen.00.position-scale [JOINT_0]SCALE
+
+net x-pos-cmd    joint.0.motor-pos-cmd => hm2_7i96.0.stepgen.00.position-cmd
+net x-pos-fb     hm2_7i96.0.stepgen.00.position-fb => joint.0.motor-pos-fb
+net x-enable     joint.0.amp-enable-out => hm2_7i96.0.stepgen.00.enable
+
+# --- JOINT 1 (Y1) ---
+setp hm2_7i96.0.stepgen.01.maxaccel [JOINT_1]STEPGEN_MAXACCEL
+setp hm2_7i96.0.stepgen.01.position-scale [JOINT_1]SCALE
+
+net y1-pos-cmd    joint.1.motor-pos-cmd => hm2_7i96.0.stepgen.01.position-cmd
+net y1-pos-fb     hm2_7i96.0.stepgen.01.position-fb => joint.1.motor-pos-fb
+net y1-enable     joint.1.amp-enable-out => hm2_7i96.0.stepgen.01.enable
+
+# --- JOINT 2 (Y2) ---
+setp hm2_7i96.0.stepgen.02.maxaccel [JOINT_2]STEPGEN_MAXACCEL
+setp hm2_7i96.0.stepgen.02.position-scale [JOINT_2]SCALE
+
+net y2-pos-cmd    joint.2.motor-pos-cmd => hm2_7i96.0.stepgen.02.position-cmd
+net y2-pos-fb     hm2_7i96.0.stepgen.02.position-fb => joint.2.motor-pos-fb
+net y2-enable     joint.2.amp-enable-out => hm2_7i96.0.stepgen.02.enable
+
+# --- JOINT 3 (Z) ---
+setp hm2_7i96.0.stepgen.03.maxaccel [JOINT_3]STEPGEN_MAXACCEL
+setp hm2_7i96.0.stepgen.03.position-scale [JOINT_3]SCALE
+
+net z-pos-cmd    joint.3.motor-pos-cmd => hm2_7i96.0.stepgen.03.position-cmd
+net z-pos-fb     hm2_7i96.0.stepgen.03.position-fb => joint.3.motor-pos-fb
+net z-enable     joint.3.amp-enable-out => hm2_7i96.0.stepgen.03.enable
+
+# --- JOINT 4 (A) ---
+setp hm2_7i96.0.stepgen.04.direction.invert_output TRUE
+setp hm2_7i96.0.stepgen.04.maxaccel [JOINT_4]STEPGEN_MAXACCEL
+setp hm2_7i96.0.stepgen.04.position-scale [JOINT_4]SCALE
+
+net a-pos-cmd    joint.4.motor-pos-cmd => hm2_7i96.0.stepgen.04.position-cmd
+net a-pos-fb     hm2_7i96.0.stepgen.04.position-fb => joint.4.motor-pos-fb
+net a-enable     joint.4.amp-enable-out => hm2_7i96.0.stepgen.04.enable
+
+# --- ESTOP ---
+
+# Assuming E-Stop input needs configuration or loopback for testing:
+net estop-loop iocontrol.0.user-enable-out => iocontrol.0.emc-enable-in
+
+# --- LIMITS / HOMING ---
+# --- HOME-X ---
+net home-x     <=  hm2_7i96.0.gpio.000.in_not
+net home-x     =>  joint.0.home-sw-in
+
+# --- HOME-Y ---
+net home-y     <=  hm2_7i96.0.gpio.001.in_not
+net home-y     =>  joint.1.home-sw-in
+
+# --- HOME-Y2 ---
+net home-y2    <=  hm2_7i96.0.gpio.002.in_not
+net home-y2    =>  joint.2.home-sw-in
+
+# --- HOME-Z ---
+net home-z     <=  hm2_7i96.0.gpio.003.in_not
+net home-z     =>  joint.3.home-sw-in
+
+# --- PROBE-IN ---
+# Logic to combine Tool Length Sensor (Input 4) and Touch Probe (Input 5)
+# Using AND2 gates to allow enabling/disabling via GUI/HAL if needed (default enabled)
+# Using OR2 gate to combine them into a single motion.probe-input
+
+# Set AND inputs to 1 (True) so they pass the signal by default
+setp and2.2.in0 1
+setp and2.3.in0 1
+
+# Tool Length Sensor (on Input 4)
+net length-in               hm2_7i96.0.gpio.004.in_not   and2.2.in1
+net tool-sensor             and2.2.out                   or2.0.in0
+
+# Touch Probe (on Input 5)
+net touch-probe             hm2_7i96.0.gpio.005.in_not   and2.3.in1
+net probe-in                and2.3.out                   or2.0.in1
+
+# Combine into motion.probe-input
+net probe-or-tool-sensor    or2.0.out                    motion.probe-input
+
+#*******************
+#  SPINDLE
+#*******************
+
+setp   pid.s.Pgain     [SPINDLE_0]P
+setp   pid.s.Igain     [SPINDLE_0]I
+setp   pid.s.Dgain     [SPINDLE_0]D
+setp   pid.s.bias      [SPINDLE_0]BIAS
+setp   pid.s.FF0       [SPINDLE_0]FF0
+setp   pid.s.FF1       [SPINDLE_0]FF1
+setp   pid.s.FF2       [SPINDLE_0]FF2
+setp   pid.s.deadband  [SPINDLE_0]DEADBAND
+setp   pid.s.maxoutput [SPINDLE_0]MAX_OUTPUT
+setp   pid.s.error-previous-target true
+
+net spindle-index-enable  <=> pid.s.index-enable
+net spindle-enable        =>  pid.s.enable
+net spindle-vel-cmd-rpm     => pid.s.command
+net spindle-vel-fb-rpm      => pid.s.feedback
+net spindle-output        <=  pid.s.output
+
+# ---setup spindle control signals---
+
+net spindle-vel-cmd-rps        <=  spindle.0.speed-out-rps
+net spindle-vel-cmd-rps-abs    <=  spindle.0.speed-out-rps-abs
+#net spindle-vel-cmd-rpm        <=  spindle.0.speed-out
+net spindle-vel-cmd-rpm-abs    <=  spindle.0.speed-out-abs
+#net spindle-enable             <=  spindle.0.on
+#net spindle-cw                 <=  spindle.0.forward
+#net spindle-ccw                <=  spindle.0.reverse
+net spindle-brake              <=  spindle.0.brake
+net spindle-revs               =>  spindle.0.revs
+net spindle-at-speed           =>  spindle.0.at-speed
+net spindle-vel-fb-rps         =>  spindle.0.speed-in
+net spindle-index-enable      <=>  spindle.0.index-enable
+#net spindle-at-speed => motion.spindle-at-speed
+
+# ---Setup spindle at speed signals---
+
+sets spindle-at-speed true
+
+
+#******************************
+# connect miscellaneous signals
+#******************************
+
+#  ---HALUI signals---
+
+net axis-select-x  halui.axis.x.select
+net jog-x-pos      halui.axis.x.plus
+net jog-x-neg      halui.axis.x.minus
+net jog-x-analog   halui.axis.x.analog
+net x-is-homed     halui.joint.0.is-homed
+net axis-select-y  halui.axis.y.select
+net jog-y-pos      halui.axis.y.plus
+net jog-y-neg      halui.axis.y.minus
+net jog-y-analog   halui.axis.y.analog
+net y-is-homed     halui.joint.1.is-homed
+net axis-select-z  halui.axis.z.select
+net jog-z-pos      halui.axis.z.plus
+net jog-z-neg      halui.axis.z.minus
+net jog-z-analog   halui.axis.z.analog
+net z-is-homed     halui.joint.2.is-homed
+net axis-select-a  halui.axis.a.select
+net jog-a-pos      halui.axis.a.plus
+net jog-a-neg      halui.axis.a.minus
+net jog-a-analog   halui.axis.a.analog
+net a-is-homed     halui.joint.4.is-homed
+net jog-selected-pos      halui.axis.selected.plus
+net jog-selected-neg      halui.axis.selected.minus
+net spindle-manual-cw     halui.spindle.0.forward
+net spindle-manual-ccw    halui.spindle.0.reverse
+#net spindle-manual-stop   halui.spindle.0.stop
+net MDI-mode              halui.mode.is-mdi
+
+#  ---digital in / out signals---
+
+net touch-probe     =>  motion.digital-in-00
+
+# --- PROBE ENABLE ---
+# Combine P04 (tool-change) and P05 (probe_top) to enable the probe input
+# or2.1 is used: out-04 OR out-05 => Enable
+net probe-request-04 motion.digital-out-04 => or2.1.in0
+net probe-request-05 motion.digital-out-05 => or2.1.in1
+net probe-enable     or2.1.out             => and2.3.in0
+
+# --- SPINDLE PNEUMATIC CONTROL ---
+# M64 P0, P1, P2 are used by pnc_tc_manual.ngc
+# Wiring based on user request (HMOT/CARD0 = hm2_7i96.0)
+
+net spindle-release motion.digital-out-00 => hm2_7i96.0.ssr.00.out-00
+net spindle-lock    motion.digital-out-01 => hm2_7i96.0.ssr.00.out-01
+net spindle-clean   motion.digital-out-02 => hm2_7i96.0.ssr.00.out-02
+net tool-rack       motion.digital-out-03 => hm2_7i96.0.ssr.00.out-03
+
+# Commented out manual tool change component if moving to full ATC, 
+# but for now we keep it loaded for the 'manual' probe script unless user asks to remove.
+# The user's snippet had it commented out, but we need it for the current 'tool-change.ngc' logic 
+# which might still want a pause if it's not fully automatic yet.
+# However, for pure signal wiring, the above is sufficient.
+
+
+#  ---manual tool change signals---
+
+loadusr -W hal_manualtoolchange
+net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change
+net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed
+net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number
+net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared

@@ -1,0 +1,16 @@
+o<rack_pickup_handtool> sub
+    #<post_x> = #1
+    #<post_y> = #2
+    #<post_z> = #3
+
+    g53 g0 Z #<_ini[rack_tc]z_safe>
+    g53 g0 Y #<post_y>
+    g53 g0 X #<post_x> 
+
+    G4 P2
+
+    o<spindle_tool_pickup> call [#<post_z>] [#<post_z>]
+    g53 g0 Z #<_ini[rack_tc]z_safe>
+
+o<rack_pickup_handtool> endsub [1]
+M2

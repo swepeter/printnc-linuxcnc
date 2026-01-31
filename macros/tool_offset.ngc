@@ -1,0 +1,21 @@
+O<tool_offset> SUB
+
+( Filename: tool_offset.ngc )
+
+  #<_probe_offset> = 2.000 ; Define a variable for the probe offset (the distance added to the measured value)
+  
+  G21 ; Set units to millimeters (G20 would set units to inches)
+  M64 P04 ; Enable Probe
+  G91 G38.2 F300 Z-5 ; Probe in the negative Z direction up to 20 mm at a feed rate of 300 mm/min
+  
+  G90 G0 Z[#5063+1] ; Return to absolute mode (G90) and move the Z-axis 1 mm above the contact point
+  
+  G91 G38.2 F5 Z-1.7 ; Probe slowly in the negative Z direction up to 1.7 mm for precision
+  
+  G10 L1 P#5400 Z[#5063+#<_probe_offset>] ; Set the current tool's length offset
+  
+  G91 G0 Z10 ; Move the Z-axis up 10 mm
+  M65 P04 ; Disable Probe
+O<tool_offset> endsub
+
+M2

@@ -1,0 +1,18 @@
+# Mock HAL pins for qtversaprobe to prevent errors in rack_tool_change.ngc
+# These are usually created by the GUI, but we define them here for headless/CLI compatibility
+
+# Define new signals
+newsig qtversaprobe.enable bit
+newsig qtversaprobe.searchvel float
+newsig qtversaprobe.probevel float
+newsig qtversaprobe.backoffdist float
+newsig qtversaprobe.probeheight float
+newsig qtversaprobe.blockheight float
+
+# Set default values
+sets qtversaprobe.enable 1
+sets qtversaprobe.searchvel 200
+sets qtversaprobe.probevel 50
+sets qtversaprobe.backoffdist 5
+sets qtversaprobe.probeheight 0
+sets qtversaprobe.blockheight 0

@@ -1,0 +1,37 @@
+o<rack_pickup_simple> sub
+    ; Check input
+    #<post_x> = #1
+    #<post_y> = #2
+    #<post_z> = #3
+
+    #<z_pre_pickup> = [#<post_z> + #<_ini[rack_tc]z_pre_pickup>]
+    #<z_pickup> = [#<post_z> + #<_ini[rack_tc]z_pickup> ]
+
+    g53 g0 Z #<_ini[rack_tc]z_safe>
+    g53 g0 Y #<post_y>
+    g53 g0 X #<post_x> 
+    g53 g0 Z #<_ini[rack_tc]z_spindle_safe>
+
+
+    ; Pickup
+    o<spindle_tool_pickup> call [#<z_pre_pickup>] [#<z_pickup>]
+    ;g53 g1 Z #<z_pre_pickup> F600
+    ;g53 g0 Z #<z_pre_pickup>
+
+    ;M64 P #<_ini[pins]spindle_clean> 
+    ;M64 P #<_ini[pins]spindle_release>
+    ;G4 P0.5
+    ;g53 g1 Z #<z_pickup> F600
+    ;G4 P0.5
+    ;M65 P #<_ini[pins]spindle_release>
+    ;M65 P #<_ini[pins]spindle_clean> 
+    ;G4 P0.5
+
+    g53 g0 Z #<_ini[rack_tc]z_safe>
+    ;g53 g0 X #<_ini[rack_tc]x_safe> Y #<_ini[rack_tc]y_safe>
+
+    
+
+; succeed by returning a positive value
+o<rack_pickup_simple> endsub [1]
+M2

@@ -1,0 +1,17 @@
+o<spindle_tool_pickup> sub 
+    #<z_pre_pickup> = #1
+    #<z_pickup> = #2
+
+    g53 g0 Z #<z_pre_pickup>
+
+    M64 P #<_ini[pins]spindle_clean> 
+    G4 P0.1
+    M64 P #<_ini[pins]spindle_release>
+    G4 P0.4
+    g53 g1 Z #<z_pickup> F600
+    G4 P1
+    M65 P #<_ini[pins]spindle_release>
+    M65 P #<_ini[pins]spindle_clean> 
+    G4 P1
+o<spindle_tool_pickup> endsub [1]
+M2
