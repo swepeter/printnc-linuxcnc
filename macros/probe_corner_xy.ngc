@@ -1,0 +1,65 @@
+o<probe_corner_xy> sub
+
+( Configuration )
+#<ProbeDiameter> =   2.00    ( Diameter of the probe tip )
+#<ProbeRadius>   =  [#<ProbeDiameter> / 2]
+
+#<FastFeed>      = 300.0     ( Speed for initial search )
+#<SlowFeed>      =  50.0     ( Speed for precise measurement )
+#<XY_ProbeRange> =  20.0     ( Max distance to search for X/Y edge )
+#<SideClearance> =  15.0     ( Distance to move sideways to clear the corner )
+#<LiftZ>         =  10.0     ( Relative distance to lift Z for repositioning )
+#<Retract>       =   2.0     ( Distance to back off after touching )
+
+( ------------------------------------- )
+( PREPARATION )
+( ------------------------------------- )
+
+(MSG, Ensure Probe is LOWERED to desired probe depth inside the corner area before running!)
+G91                 ( Relative Mode )
+G40                 ( Cancel Cutter Comp )
+G49                 ( Cancel Tool Offsets )
+
+( 1. PROBE X - LEFT EDGE )
+(MSG, Moving to X Start Position...)
+G0 X[#<SideClearance> * -1] ( Move Left of the block )
+
+(MSG, Probing X Edge...)
+M64 P05 M64 P04     ( Enable Probes )
+F[#<FastFeed>]
+G38.2 X[#<XY_ProbeRange>]   ( Probe Right towards edge )
+G0 X[#<Retract> * -1]       ( Retract Left )
+F[#<SlowFeed>]
+G38.2 X[2 * #<Retract>]     ( Slow Probe Right )
+M65 P05 M65 P04     ( Disable Probes )
+
+( Set X Zero: Current Point = -Radius )
+G10 L20 P0 X[0 - #<ProbeRadius>]
+
+( 2. REPOSITION FOR Y )
+G0 Z[#<LiftZ>]      ( Lift Z up to clear corner )
+G0 X[#<ProbeRadius> + #<SideClearance>] ( Move Right, into the block X-wise )
+G0 Y[#<SideClearance> * -1] ( Move Front of the block )
+G0 Z[#<LiftZ> * -1] ( Drop Z back to probe depth )
+
+( 3. PROBE Y - FRONT EDGE )
+(MSG, Probing Y Edge...)
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Y[#<XY_ProbeRange>]   ( Probe Back towards edge )
+G0 Y[#<Retract> * -1]       ( Retract Front )
+F[#<SlowFeed>]
+G38.2 Y[2 * #<Retract>]     ( Slow Probe Back )
+M65 P05 M65 P04
+
+( Set Y Zero: Current Point = -Radius )
+G10 L20 P0 Y[0 - #<ProbeRadius>]
+
+( 4. FINISH )
+G0 Z[#<LiftZ>]      ( Lift Z to Safe Height )
+G90                 ( Absolute Mode )
+G0 X0 Y0            ( Move to the new Corner Zero X/Y )
+(MSG, XY Corner Found! X0 Y0 Set.)
+
+o<probe_corner_xy> endsub
+M2

@@ -1,0 +1,118 @@
+o<probe_rotary_axis_z> sub
+
+( Configuration )
+#<ProbeRange>    = -20.0     ( Max Z depth to search )
+#<Retract>       =   2.0     ( Distance to retract after probe )
+#<FastFeed>      = 300.0
+#<SlowFeed>      =  50.0
+
+( ------------------------------------- )
+( PREPARATION )
+( ------------------------------------- )
+(MSG, Ensure Probe is centered in X and Y roughly over the A-Axis!)
+(MSG, Ensure Z is close to the material surface ~10mm!)
+G91
+G40
+G49
+
+( Store Start Z Absolute for return )
+#<Start_Z_Abs> = #<_z>
+
+( 1. PROBE SIDE 1: A=0 DEGREES )
+(MSG, Probing Side 1: A=0...)
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_0> = #5063   ( Store Z at A=0 )
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 2. ROTATE TO A=90 )
+(MSG, Rotating to A=90...)
+G0 A90
+
+( Return to User Z Start )
+G90
+G0 Z[#<Start_Z_Abs>]
+G91
+
+( Probe Side 2 )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_90> = #5063
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 3. ROTATE TO A=180 )
+(MSG, Rotating to A=180...)
+G0 A90
+
+( Return to User Z Start )
+G90
+G0 Z[#<Start_Z_Abs>]
+G91
+
+( Probe Side 3 )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_180> = #5063
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 4. ROTATE TO A=270 )
+(MSG, Rotating to A=270...)
+G0 A90
+
+( Return to User Z Start )
+G90
+G0 Z[#<Start_Z_Abs>]
+G91
+
+( Probe Side 4 )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_270> = #5063
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 5. ROTATE BACK TO 0 )
+(MSG, Returning to A=0...)
+G0 A-270
+
+( 6. CALCULATE & SET Z0 )
+( Z Center is average of Z_0 and Z_180 )
+#<Center_Z> = [[#<Z_0> + #<Z_180>] / 2]
+
+(MSG, Setting Z0 to Rotary Center...)
+G90
+G10 L20 P0 Z[#<Center_Z>]
+
+( Move to Z0 to confirm? No, move to Safe Start )
+G0 Z[#<Start_Z_Abs>]
+G0 X0 Y0
+
+o<probe_rotary_axis_z> endsub
+M2

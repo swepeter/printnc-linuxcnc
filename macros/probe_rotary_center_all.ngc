@@ -1,0 +1,186 @@
+o<probe_rotary_center_all> sub
+
+( Configuration )
+#<ProbeRange>    = -20.0     ( Max Z depth to search )
+#<ProbeRangeY>   =  40.0     ( Max Y probe distance )
+#<Retract>       =   2.0     ( Distance to retract after probe )
+#<FastFeed>      = 300.0
+#<SlowFeed>      =  50.0
+
+( ------------------------------------- )
+( PREPARATION )
+( ------------------------------------- )
+(MSG, 1. Center Probe roughly over X/Y Axis.)
+(MSG, 2. Jog Z to ~10mm ABOVE the material highest point.)
+(MSG, 3. Ensure Y is roughly centered.)
+G91
+G40
+G49
+
+( Store Start Z/Y Absolute )
+#<Start_Z_Abs> = #<_z>
+#<Start_Y_Abs> = #<_y>
+
+( ------------------------------------- )
+( PART 1: FIND Z CENTER (4-SIDES) )
+( ------------------------------------- )
+
+( 1. PROBE Z AT A=0 )
+(MSG, Probing Z at A=0...)
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_0> = #5063   ( Store Top Z )
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 2. ROTATE TO A=90 )
+G90
+G0 A90
+G0 Z[#<Start_Z_Abs>]
+G91
+
+( Probe Z Side 2 )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_90> = #5063
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 3. ROTATE TO A=180 )
+G90
+G0 A180
+G0 Z[#<Start_Z_Abs>]
+G91
+
+( Probe Z Side 3 )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_180> = #5063 ( Store Bottom Z )
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 4. ROTATE TO A=270 )
+G90
+G0 A270
+G0 Z[#<Start_Z_Abs>]
+G91
+
+( Probe Z Side 4 )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z_270> = #5063
+M65 P05 M65 P04
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 5. ROTATE BACK TO A=0 )
+G90
+G0 A0
+G91
+
+( Calculate Z Center )
+#<Center_Z> = [[#<Z_0> + #<Z_180>] / 2]
+
+( ------------------------------------- )
+( PART 2: FIND Y CENTER (ROTATION METHOD) )
+( ------------------------------------- )
+( We need to probe Y at correct depth: 5mm below Top Surface )
+
+( 6. PROBE Y AT A=0 )
+(MSG, Probing Y at A=0...)
+( Move to Safe Start Y- (Front/Left) )
+( We need to move OUT enough to clear the stock before dropping Z. )
+( Let's assume user started centered roughly. Move Y-40 relative to Start. )
+G90
+G0 Y[#<Start_Y_Abs> - 40.0]
+
+( Drop Z to: Top Surface(A0) - 5.0mm )
+#<ProbeDepth_0> = [#<Z_0> - 5.0]
+G0 Z[#<ProbeDepth_0>]
+G91
+
+( Probe Y+ )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Y[#<ProbeRangeY>]
+G0 Y[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 Y[#<Retract> * 1.5]
+#<Y_Side_0> = #5062  ( Saved Y position at A=0 )
+M65 P05 M65 P04
+G0 Y[#<Retract> * -1]
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 7. PROBE Y AT A=180 )
+(MSG, Rotating to A=180 for Y Probe...)
+G90
+G0 A180
+
+( Return to Y Start Position (Left/Front Side) )
+G0 Y[#<Start_Y_Abs> - 40.0]
+
+( Drop Z to: Top Surface(A180) - 5.0mm )
+( This handles eccentricity! )
+#<ProbeDepth_180> = [#<Z_180> - 5.0]
+G0 Z[#<ProbeDepth_180>]
+G91
+
+( Probe Y+ (SAME SIDE) )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Y[#<ProbeRangeY>]
+G0 Y[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 Y[#<Retract> * 1.5]
+#<Y_Side_180> = #5062 ( Saved Y position at A=180 )
+M65 P05 M65 P04
+G0 Y[#<Retract> * -1]
+
+( Lift to MAX SAFE Z )
+G53 G0 Z0
+
+( 8. ROTATE BACK TO A=0 )
+G90
+G0 A0
+
+( Calculate Y Center )
+#<Center_Y> = [[#<Y_Side_0> + #<Y_Side_180>] / 2]
+
+( ------------------------------------- )
+( FINISH )
+( ------------------------------------- )
+(MSG, Setting Z0 and Y0 to Rotary Center...)
+G90
+G10 L20 P0 Z[#<Center_Z>]
+G10 L20 P0 Y[#<Center_Y>]
+
+G0 X0 Y0
+G0 Z[#<Start_Z_Abs>]
+
+o<probe_rotary_center_all> endsub
+M2

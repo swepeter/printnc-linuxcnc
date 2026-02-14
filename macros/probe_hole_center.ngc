@@ -1,0 +1,147 @@
+o<probe_hole_center> sub
+
+( Configuration )
+#<ProbeDiameter> =   2.00    ( Diameter of the probe tip )
+#<ProbeRadius>   =  [#<ProbeDiameter> / 2]
+
+#<FastFeed>      = 300.0     ( Speed for initial search )
+#<SlowFeed>      =  50.0     ( Speed for precise measurement )
+#<TravelFeed>    = 1000.0    ( Speed for rapid moves )
+#<MaxRadius>     =  20.0     ( Max distance to search from center )
+#<Retract>       =   2.0     ( Distance to back off after touching )
+
+( ------------------------------------- )
+( PREPARATION )
+( ------------------------------------- )
+
+(MSG, Ensure Probe is roughly centered and lowered into the hole!)
+G91                 ( Relative Mode )
+G40                 ( Cancel Cutter Comp )
+G49                 ( Cancel Tool Offsets )
+
+( ------------------------------------- )
+( PASS 1: ROUGH CENTER FINDING )
+( ------------------------------------- )
+(MSG, Finding Rough Center...)
+
+( X Axis )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 X[#<MaxRadius>]       ( Probe Right )
+#<X_Pos> = #5061
+G0 X[#<Retract> * -1]       ( Back off )
+
+F[#<TravelFeed>]
+G0 X[#<Retract> * -1 - #<MaxRadius> * 0.5] ( Move Left towards center )
+
+F[#<FastFeed>]
+G38.2 X[#<MaxRadius> * -1.5] ( Probe Left )
+#<X_Neg> = #5061
+G0 X[#<Retract>]             ( Back off )
+M65 P05 M65 P04
+
+( Move to Rough X Center )
+#<Center_X> = [[#<X_Pos> + #<X_Neg>] / 2]
+G90
+F[#<TravelFeed>]
+G0 X[#<Center_X>]
+G91
+
+( Y Axis )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Y[#<MaxRadius>]       ( Probe Back )
+#<Y_Pos> = #5062
+G0 Y[#<Retract> * -1]       ( Back off )
+
+F[#<TravelFeed>]
+G0 Y[#<Retract> * -1 - #<MaxRadius> * 0.5] ( Move Front towards center )
+
+F[#<FastFeed>]
+G38.2 Y[#<MaxRadius> * -1.5] ( Probe Front )
+#<Y_Neg> = #5062
+G0 Y[#<Retract>]             ( Back off )
+M65 P05 M65 P04
+
+( Move to Rough Y Center )
+#<Center_Y> = [[#<Y_Pos> + #<Y_Neg>] / 2]
+G90
+F[#<TravelFeed>]
+G0 Y[#<Center_Y>]
+G91
+
+( ------------------------------------- )
+( PASS 2: FINE CENTER FINDING )
+( ------------------------------------- )
+(MSG, Refining Center...)
+
+( X Axis - Fine )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 X[#<MaxRadius>]       ( Probe Right )
+G0 X[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 X[1.2 * #<Retract>]   ( Slow Probe Right )
+#<X_Pos> = #5061
+G0 X[#<Retract> * -1]
+
+F[#<TravelFeed>]
+( Since we are now centered, just move back by [Radius + Retract] )
+G0 X[#<Retract> * -1 - #<MaxRadius>] (Safe move left)
+(Actually better to use the known width)
+(Or just probe left from center)
+G90
+G0 X[#<Center_X>] (Return to center)
+G91
+
+F[#<FastFeed>]
+G38.2 X[#<MaxRadius> * -1]   ( Probe Left )
+G0 X[#<Retract>]
+F[#<SlowFeed>]
+G38.2 X[#<Retract> * -1.2]   ( Slow Probe Left )
+#<X_Neg> = #5061
+G0 X[#<Retract>]
+M65 P05 M65 P04
+
+( Calculate Precise X Center )
+#<Center_X> = [[#<X_Pos> + #<X_Neg>] / 2]
+G90
+G0 X[#<Center_X>]
+G91
+
+( Y Axis - Fine )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Y[#<MaxRadius>]       ( Probe Back )
+G0 Y[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 Y[1.2 * #<Retract>]   ( Slow Probe Back )
+#<Y_Pos> = #5062
+G0 Y[#<Retract> * -1]
+
+G90
+G0 Y[#<Center_Y>] (Return to center)
+G91
+
+F[#<FastFeed>]
+G38.2 Y[#<MaxRadius> * -1]   ( Probe Front )
+G0 Y[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Y[#<Retract> * -1.2]   ( Slow Probe Front )
+#<Y_Neg> = #5062
+G0 Y[#<Retract>]
+M65 P05 M65 P04
+
+( Calculate Precise Y Center )
+#<Center_Y> = [[#<Y_Pos> + #<Y_Neg>] / 2]
+G90
+G0 Y[#<Center_Y>]
+
+( ------------------------------------- )
+( FINISH )
+( ------------------------------------- )
+G10 L20 P0 X0 Y0    ( Set Work Zero )
+(MSG, Hole Center Found & Zero Set!)
+
+o<probe_hole_center> endsub
+M2

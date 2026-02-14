@@ -1,0 +1,104 @@
+o<probe_angle_y> sub
+
+( Configuration )
+#<ProbeDiameter> =   2.00    ( Diameter of the probe tip )
+#<ProbeRadius>   =  [#<ProbeDiameter> / 2]
+#<ProbeDistance> =  10.0     ( Distance to move +/- Y from start )
+#<ProbeRange>    =  20.0     ( Max distance to probe X )
+#<Retract>       =   2.0     ( Distance to retract )
+#<FastFeed>      = 300.0
+#<SlowFeed>      =  50.0
+
+( ------------------------------------- )
+( PREPARATION )
+( ------------------------------------- )
+(MSG, Ensure Probe is on the LEFT side of the Y-Edge you want to align nearby!)
+G91
+G40
+G49
+
+( 1. PROBE POINT 1: Y + Offset )
+( Move up in Y )
+G0 Y[#<ProbeDistance>]
+
+( Probe X+ to find edge )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 X[#<ProbeRange>]
+G0 X[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 X[1.2 * #<Retract>]
+#<X1> = #5061   ( Store Absolute X of Point 1 )
+M65 P05 M65 P04
+G0 X[#<Retract> * -1]  ( Back off )
+
+( 2. PROBE POINT 2: Y - Offset )
+( Move down in Y to [Start - Offset] )
+( Total move = -ProbeDistance (to start) - ProbeDistance (to pt2) = -2 * Dist )
+G0 Y[#<ProbeDistance> * -2]
+
+( Probe X+ to find edge )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 X[#<ProbeRange> + #<Retract>] ( Allow for skew )
+G0 X[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 X[1.2 * #<Retract>]
+#<X2> = #5061   ( Store Absolute X of Point 2 )
+M65 P05 M65 P04
+G0 X[#<Retract> * -1]
+
+( 3. RETURN TO START Y )
+G0 Y[#<ProbeDistance>]
+
+( 4. CALCULATE ANGLE )
+( Delta X = X1 - X2 )
+( Delta Y = +Offset - (-Offset) = 2 * ProbeDistance )
+#<DeltaX> = [#<X1> - #<X2>]
+#<DeltaY> = [#<ProbeDistance> * 2]
+
+( Angle = ATAN[DeltaX / DeltaY] )
+#<Angle> = [ATAN[#<DeltaX>] / [#<DeltaY>]] 
+( Wait, ATAN takes two args in NGC usually: ATAN[Y]/[X] -> ATAN[DeltaX]/[DeltaY] ? No, ATAN[Y]/[X] is typical but LinuxCNC uses ATAN[Y]/[X] or ATAN[Y, X]? )
+( CHECK SYNTAX: LinuxCNC G-code ATAN[arg] is arctan(arg). ATAN[y]/[x] is valid division. )
+( Correct format usually: ATAN[#<DeltaX>] / [1] if deltaY=1? No. )
+( LinuxCNC: ATAN[#<DeltaX>] / [#<DeltaY>] is wrong. ATAN[#<DeltaX>]/[#<DeltaY>] is division of result. )
+( We need ATAN[DeltaX] / DeltaY? No. We need ATAN(DeltaX / DeltaY). )
+#<MeasuredAngle> = [ATAN[#<DeltaX>] / [#<DeltaY>]] (WRONG)
+
+( Correct Trig: Tan(theta) = Opp/Adj = DeltaX / DeltaY )
+( Theta = ATAN[ DeltaX / DeltaY ] )
+#<MeasuredAngle> = [ATAN[#<DeltaX> / #<DeltaY>]]
+
+( 5. APPLY ROTATION )
+( G68: Coordinate Rotation )
+( G68 A0 B0 R#<MeasuredAngle> )
+( A0 B0 specifies the pivot point. We usually want to pivot around the current point or 0,0? )
+( If we use G68, it rotates around X0 Y0 of the current system. )
+( This might shift your origin! )
+( Ideally we apply rotation, then re-probe X to set X0. )
+G10 L2 P0 R[#<MeasuredAngle>] ( Apply rotation to G54 directly? No, G10 L2 sets coordinate system user rotation )
+( G10 L2 P0 R... sets the rotation of the current coordinate system G54/etc )
+( Note: R is rotation around Z axis )
+
+( Let's use G10 L2 P0 R... )
+( But we need to ADD this to existing rotation? Or replace? Usually replace if starting fresh. )
+(MSG, Alignment Complete! Skew Angle: #<MeasuredAngle> degrees. Rotation Applied.)
+G10 L2 P0 R[#<MeasuredAngle>]
+
+( 6. RESET X0 )
+( Since we rotated, our X edge is now "flat" vertical. )
+( We are at the midpoint Y. Let's probe X once more to set exact X0. )
+(MSG, Re-Zeroing X...)
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 X[#<ProbeRange>]
+G0 X[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 X[1.2 * #<Retract>]
+M65 P05 M65 P04
+G10 L20 P0 X[0 - #<ProbeRadius>]
+G0 X[#<Retract> * -1]
+
+o<probe_angle_y> endsub
+M2

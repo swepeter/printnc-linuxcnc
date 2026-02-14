@@ -1,0 +1,83 @@
+o<probe_rotate_flat> sub
+
+( Configuration )
+#<ProbeDist>     =  10.0     ( Distance from center to probe points +/- Y )
+#<ProbeRange>    = -10.0     ( Max Z depth to search )
+#<Retract>       =   2.0     ( Distance to retract after probe )
+#<FastFeed>      = 300.0
+#<SlowFeed>      =  50.0
+#<SafeZ>         =  10.0     ( Height to lift between points )
+
+( ------------------------------------- )
+( PREPARATION )
+( ------------------------------------- )
+(MSG, Ensure Probe is CENTERED over the A-Axis part and Z is safe!)
+G91
+G40
+G49
+
+( 1. PROBE POINT 1: Y MINUS )
+( Move to Y - Offset )
+G0 Y[#<ProbeDist> * -1]
+G0 Z[#<SafeZ> * -1] ( Drop to probe start height if needed? No, assume user is close )
+
+( Probe Z- )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange>]
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z1> = #5063   ( Store Z1 )
+M65 P05 M65 P04
+G0 Z[#<SafeZ>]  ( Lift to Safe Z )
+
+( 2. PROBE POINT 2: Y PLUS )
+( Move to Y + Offset )
+( Distance = ProbeDist * 2 )
+G0 Y[#<ProbeDist> * 2]
+G0 Z[#<SafeZ> * -1] ( Drop back down )
+
+( Probe Z- )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Z[#<ProbeRange> + #<SafeZ>] ( Probe deeper if tilted down )
+G0 Z[#<Retract>]
+F[#<SlowFeed>]
+G38.2 Z[#<Retract> * -2]
+#<Z2> = #5063   ( Store Z2 )
+M65 P05 M65 P04
+G0 Z[#<SafeZ>]
+
+( 3. RETURN TO CENTER Y )
+G0 Y[#<ProbeDist> * -1]
+
+( 4. CALCULATE ANGLE )
+( Delta Z = Z2 (Y+) - Z1 (Y-) )
+( Delta Y = 2 * ProbeDist )
+#<DeltaZ> = [#<Z2> - #<Z1>]
+#<DeltaY> = [#<ProbeDist> * 2]
+
+( Rotation Logic: Right Hand Rule )
+( If Z2 > Z1 (Y+ is higher), we need to rotate A NEGATIVE to lower Y+ )
+( Tan(theta) = DeltaZ / DeltaY )
+( Theta = ATAN[ DeltaZ / DeltaY ] )
+#<AngleError> = [ATAN[#<DeltaZ> / #<DeltaY>]]
+( Correction = -1 * Error )
+#<Correction> = [#<AngleError> * -1]
+
+( 5. APPLY ROTATION )
+( G10 L2 P0 R... rotates the coordinate system. We want to rotate the AXIS physically. )
+( So we issue a move command: G0 A[CurrentA + Correction] )
+( But in relative mode G91, G0 A[Correction] moves A by that amount. )
+(MSG, Rotating A Axis by #<Correction> degrees to level surface...)
+G0 A[#<Correction>]
+
+( 6. FINISH )
+( Rotation Applied. Z0 is NOT changed. )
+(MSG, A-Axis Leveled. Z0 Unchanged.)
+M2
+
+G90
+o<probe_rotate_flat> endsub
+M2

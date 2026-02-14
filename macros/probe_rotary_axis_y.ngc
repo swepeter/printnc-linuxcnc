@@ -1,0 +1,82 @@
+o<probe_rotary_axis_y> sub
+
+( Configuration )
+#<ProbeRange>    =  40.0     ( Max Y probe distance )
+#<Retract>       =   2.0     ( Distance to retract after probe )
+#<FastFeed>      = 300.0
+#<SlowFeed>      =  50.0
+
+( ------------------------------------- )
+( PREPARATION )
+( ------------------------------------- )
+(MSG, Position Probe at Y- MINUS side, ABOVE the material!)
+(MSG, Macro will drop Z to 0 to probe. Ensure Z0 is set to Rotary Axis Center!)
+G91
+G40
+G49
+
+( Store Start Y/Z Absolute for return )
+#<Start_Y_Abs> = #<_y>
+#<Start_Z_Abs> = #<_z>
+
+( 1. PROBE SIDE 1 (Y-) AT A=0 )
+( Drop Z to Center (Z0) )
+( Use G90 for Z move to be sure )
+G90
+G0 Z0
+G91
+
+( Probe Y+ )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Y[#<ProbeRange>]
+G0 Y[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 Y[#<Retract> * 1.5]
+#<Y_Side_0> = #5062  ( Saved Y position at A=0 )
+M65 P05 M65 P04
+G0 Y[#<Retract> * -1]
+
+( Lift to Max Z )
+G53 G0 Z0
+
+( 2. ROTATE TO A=180 )
+G90
+G0 A180
+
+( Return to Y Start Position )
+G0 Y[#<Start_Y_Abs>]
+
+( Drop Z to Center (Z0) )
+G0 Z0
+G91
+
+( Probe Y+ (SAME SIDE) )
+M64 P05 M64 P04
+F[#<FastFeed>]
+G38.2 Y[#<ProbeRange>]
+G0 Y[#<Retract> * -1]
+F[#<SlowFeed>]
+G38.2 Y[#<Retract> * 1.5]
+#<Y_Side_180> = #5062 ( Saved Y position at A=180 )
+M65 P05 M65 P04
+G0 Y[#<Retract> * -1]
+
+( Lift to Max Z )
+G53 G0 Z0
+
+( 3. ROTATE BACK TO A=0 )
+G90
+G0 A0
+
+( 4. CALCULATE & SET Y0 )
+#<Center_Y> = [[#<Y_Side_0> + #<Y_Side_180>] / 2]
+
+(MSG, Setting Y0 to Rotary Center...)
+G90
+G10 L20 P0 Y[#<Center_Y>]
+G0 Y0
+G0 Z[#<Start_Z_Abs>]
+
+o<probe_rotary_axis_y> endsub
+M2

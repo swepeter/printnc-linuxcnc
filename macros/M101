@@ -1,0 +1,4 @@
+#!/bin/bash
+# M101 - Popup Confirmation
+zenity --question --text="Are you ready to RELEASE the tool?" --title="Tool Release Confirmation"
+exit $?
